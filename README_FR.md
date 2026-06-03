@@ -8,7 +8,7 @@
 
 [English](./README.md) | [简体中文](./README_ZH.md) | [日本語](./README_JA.md) | [한국어](./README_KO.md) | [Español](./README_ES.md) | Français | [Deutsch](./README_DE.md) | [Português](./README_PT.md) | [Русский](./README_RU.md)
 
-[Installation](#installation) • [Intégrations](#intégrations) • [Licence](#licence)
+[Installation](#installation) • [Fonctionnalités](#fonctionnalités) • [Intégrations](#intégrations) • [Licence](#licence)
 
 ---
 
@@ -39,6 +39,19 @@ Dev local : configurez le compte admin et une clé API de modèle, puis lancez l
 cp deploy/.env.example deploy/.env
 make compose-up    # make compose-down to stop
 ```
+
+## Fonctionnalités
+
+- **Agents à deux étages Coordinator + Specialist** — Le coordinator gère la conversation et délègue aux sous-agents SRE / réseau / DB / actifs. Chaque specialist a son propre toolbag et persona ; la locale UI est propagée tout au long de la chaîne.
+- **Investigation automatique sur alerte** — L’alerte se déclenche → l’investigator lance un RCA worker → cause racine + chaîne d’éléments de preuve réécrits dans la session de chat. Tourne même en dehors des heures d’astreinte.
+- **RCA cause racine, pas une simple conversation** — L’agent parcourt la topologie des services pour analyser le rayon d’impact, corrèle métriques / logs / traces et identifie le "pourquoi" jusqu’à une **ligne de code source**.
+- **Zéro port entrant** — L’edge compose vers l’extérieur ; les hôtes n’ouvrent aucun port 22 / 80 / 443. Le plan de données télémétrie est séparé du plan de contrôle.
+- **SSH dans le navigateur** — Un shell interactif vers n’importe quel hôte via le même tunnel sortant inversé. Pas de clé SSH à distribuer, pas de jumpbox, pas de port 22. Chaque commande auditée.
+- **Auto-hébergeable en une commande** — `docker compose up` lance la stack complète (manager + MySQL + Qdrant + frontier). Zéro dépendance SaaS.
+- **Stack d’observabilité intégrée** — Prometheus (métriques) / Loki (logs) / Tempo (traces) / Grafana (tableaux de bord) déployés automatiquement. Posez la question en langage naturel, l’agent rédige le PromQL / LogQL / TraceQL.
+- **Apportez votre modèle** — Anthropic / OpenAI / GLM / DeepSeek / Gemini / Kimi ou tout endpoint compatible OpenAI. Routage des fournisseurs et changement du modèle par défaut à chaud, sans redémarrage.
+- **Canaux IM bidirectionnels** — Slack / Telegram / Larksuite (Feishu) / DingTalk / WeCom — posez vos questions là où votre équipe parle déjà ; allow-list par canal et langue par canal.
+- **Outils host en lecture seule, chaque appel audité** — bash (sandbox), `host_probe_*`, `query_promql`, `expand_topology`, 26+ outils. Le rôle viewer obtient automatiquement le sous-ensemble ClassSafe.
 
 ## Intégrations
 

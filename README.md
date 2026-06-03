@@ -8,7 +8,7 @@
 
 English | [简体中文](./README_ZH.md) | [日本語](./README_JA.md) | [한국어](./README_KO.md) | [Español](./README_ES.md) | [Français](./README_FR.md) | [Deutsch](./README_DE.md) | [Português](./README_PT.md) | [Русский](./README_RU.md)
 
-[Install](#install) • [Integrations](#integrations) • [License](#license)
+[Install](#install) • [Features](#features) • [Integrations](#integrations) • [License](#license)
 
 ---
 
@@ -39,6 +39,19 @@ Local dev: set the admin account + one model API key, then bring up the full sta
 cp deploy/.env.example deploy/.env
 make compose-up    # make compose-down to stop
 ```
+
+## Features
+
+- **Coordinator + Specialist two-tier agent** — The coordinator runs the conversation and dispatches to SRE / network / DB / asset specialist sub-agents, each with its own toolbag and persona. The UI locale is threaded end-to-end.
+- **Auto-investigate on alert** — An alert fires, the investigator spawns an RCA worker, follows the trail, and writes the root cause + evidence chain back to a chat session — runs whether you are on call or not.
+- **Root-cause RCA, not surface chat** — The agent walks the service topology for blast radius, correlates metrics / logs / traces, and pins the "why" down to a **source-code line**.
+- **Zero inbound ports** — The edge dials out; hosts open no port 22 / 80 / 443. The telemetry data plane is separated from the control plane.
+- **Browser SSH** — A reverse-tunnel interactive shell into any host over the same outbound connection — no SSH keys to distribute, no jumpbox, no port 22. Every command audited.
+- **Self-hostable in one command** — `docker compose up` brings up the full stack (manager + MySQL + Qdrant + frontier). No SaaS dependency.
+- **Full observability stack built in** — Prometheus (metrics), Loki (logs), Tempo (traces), Grafana (dashboards) wired up out of the box. Ask in natural language; the agent writes the PromQL / LogQL / TraceQL.
+- **Bring your own model** — Anthropic / OpenAI / GLM / DeepSeek / Gemini / Kimi or any OpenAI-compatible endpoint. Provider routing and default-model switching are hot — no restart.
+- **Two-way IM channels** — Slack / Telegram / Larksuite (Feishu) / DingTalk / WeCom — ask from wherever your team already talks. Per-channel allow-list and per-channel locale.
+- **Read-only host tools, every call audited** — bash (sandboxed), `host_probe_*`, `query_promql`, `expand_topology`, 26+ inspection tools. The viewer role automatically gets the ClassSafe-only subset.
 
 ## Integrations
 
