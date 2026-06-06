@@ -176,7 +176,7 @@ func (u *Usecase) FireSchedule(ctx context.Context, s *model.ReportSchedule, fir
 // GenerateNow creates an ad-hoc report not bound to a schedule (manual
 // "generate now", API PR-4). scheduleID is nil so the dedup unique key
 // doesn't apply — every manual trigger produces a fresh row.
-func (u *Usecase) GenerateNow(ctx context.Context, createdBy uint64, kind, tz, scopeJSON string, period Period) (*model.Report, error) {
+func (u *Usecase) GenerateNow(ctx context.Context, createdBy uint64, kind, tz, scopeJSON, locale string, period Period) (*model.Report, error) {
 	if _, err := loadLocation(tz); err != nil {
 		return nil, err
 	}
@@ -189,6 +189,7 @@ func (u *Usecase) GenerateNow(ctx context.Context, createdBy uint64, kind, tz, s
 		PeriodStart: period.Start,
 		PeriodEnd:   period.End,
 		Timezone:    tz,
+		Locale:      locale,
 		Status:      model.StatusPending,
 		ErrorMsg:    "",
 		ContentJSON: "",

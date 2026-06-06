@@ -151,20 +151,16 @@ func (c *Content) MustJSON() string {
 // RenderMarkdown produces the ContentMD fallback from structured
 // content. Used for export, IM plain-text fallback, and full-text
 // search. Entity tokens are flattened to their display name.
-func (c *Content) RenderMarkdown(title string) string {
+func (c *Content) RenderMarkdown(title, locale string) string {
+	en := locale == "en"
+	mtr := func(zh, eng string) string {
+		if en {
+			return eng
+		}
+		return zh
+	}
 	var b strings.Builder
 	b.WriteString("# " + title + "\n\n")
-
-	if len(c.Hero) > 0 {
-		for _, h := range c.Hero {
-			b.WriteString(fmt.Sprintf("- **%s**: %s%s", h.Label, formatNum(h.Value), h.Unit))
-			if h.DeltaPct != nil {
-				b.WriteString(fmt.Sprintf(" (%+.0f%%)", *h.DeltaPct))
-			}
-			b.WriteString("\n")
-		}
-		b.WriteString("\n")
-	}
 
 	if c.Narrative.Headline != "" {
 		b.WriteString("## " + c.Narrative.Headline + "\n\n")
@@ -174,35 +170,49 @@ func (c *Content) RenderMarkdown(title string) string {
 	}
 
 	if c.Resource.Available {
-		b.WriteString("## 资源使用（周期 均值 / 峰值）\n\n")
-		b.WriteString(fmt.Sprintf("- CPU: 均 %.1f%% · 峰 %.1f%%\n", c.Resource.CPUAvg, c.Resource.CPUPeak))
-		b.WriteString(fmt.Sprintf("- 内存: 均 %.1f%% · 峰 %.1f%%\n", c.Resource.MemAvg, c.Resource.MemPeak))
-		b.WriteString(fmt.Sprintf("- 磁盘: 均 %.1f%% · 峰 %.1f%%\n\n", c.Resource.DiskAvg, c.Resource.DiskPeak))
+		b.WriteString("## " + mtr("资源使用（周期 均值 / 峰值）", "Resource usage (period avg / peak)") + "\n\n")
+		avg, peak := mtr("均", "avg"), mtr("峰", "peak")
+		b.WriteString(fmt.Sprintf("- CPU: %s %.1f%% · %s %.1f%%\n", avg, c.Resource.CPUAvg, peak, c.Resource.CPUPeak))
+		b.WriteString(fmt.Sprintf("- %s: %s %.1f%% · %s %.1f%%\n", mtr("内存", "Memory"), avg, c.Resource.MemAvg, peak, c.Resource.MemPeak))
+		b.WriteString(fmt.Sprintf("- %s: %s %.1f%% · %s %.1f%%\n\n", mtr("磁盘", "Disk"), avg, c.Resource.DiskAvg, peak, c.Resource.DiskPeak))
 	}
 
-	b.WriteString("## 监控覆盖\n\n")
-	b.WriteString(fmt.Sprintf("- 监控设备 %d 台 · 在线 %d 台\n", c.Fleet.Total, c.Fleet.Online))
+	b.WriteString("## " + mtr("监控覆盖", "Monitoring coverage") + "\n\n")
+	b.WriteString(fmt.Sprintf("- %s\n", mtr(
+		fmt.Sprintf("监控设备 %d 台 · 在线 %d 台", c.Fleet.Total, c.Fleet.Online),
+		fmt.Sprintf("%d devices · %d online", c.Fleet.Total, c.Fleet.Online))))
 	if len(c.Fleet.Roles) > 0 {
 		var roles []string
 		for r, n := range c.Fleet.Roles {
 			roles = append(roles, fmt.Sprintf("%s ×%d", r, n))
 		}
-		b.WriteString("- 角色: " + strings.Join(roles, " · ") + "\n")
+		b.WriteString("- " + mtr("角色", "Roles") + ": " + strings.Join(roles, " · ") + "\n")
 	}
 	b.WriteString("\n")
 
+	b.WriteString("## " + mtr("知识资产新增", "New assets") + "\n\n")
+	b.WriteString(fmt.Sprintf("- %s\n\n", mtr(
+		fmt.Sprintf("新增助理 %d · 新增技能 %d · 新增仓库 %d", c.Assets.NewAgents, c.Assets.NewSkills, c.Assets.NewRepos),
+		fmt.Sprintf("%d assistants · %d skills · %d repos", c.Assets.NewAgents, c.Assets.NewSkills, c.Assets.NewRepos))))
+
+	b.WriteString("## " + mtr("使用情况", "Usage") + "\n\n")
+	b.WriteString(fmt.Sprintf("- %s\n\n", mtr(
+		fmt.Sprintf("会话 %d · 输入 token %d · 输出 token %d", c.Usage.Sessions, c.Usage.PromptTokens, c.Usage.CompletionTokens),
+		fmt.Sprintf("%d sessions · %d prompt tokens · %d completion tokens", c.Usage.Sessions, c.Usage.PromptTokens, c.Usage.CompletionTokens))))
+
 	if len(c.KeyIncidents) > 0 {
-		b.WriteString("## 告警与处置\n\n")
+		b.WriteString("## " + mtr("告警与处置", "Alerts & response") + "\n\n")
 		for _, ki := range c.KeyIncidents {
 			b.WriteString(fmt.Sprintf("- I-%d %s (%s, %dm, %s)\n",
 				ki.ID, ki.Title, ki.Severity, ki.DurationMin, ki.Status))
 		}
-		b.WriteString(fmt.Sprintf("- Agent 动作: mutating %d（批准 %d）· 只读 %d\n\n",
-			c.Actions.MutatingTotal, c.Actions.MutatingApproved, c.Actions.SafeTotal))
+		b.WriteString(fmt.Sprintf("- %s\n\n", mtr(
+			fmt.Sprintf("Agent 动作: mutating %d（批准 %d）· 只读 %d", c.Actions.MutatingTotal, c.Actions.MutatingApproved, c.Actions.SafeTotal),
+			fmt.Sprintf("Agent actions: mutating %d (approved %d) · read-only %d", c.Actions.MutatingTotal, c.Actions.MutatingApproved, c.Actions.SafeTotal))))
 	}
 
 	if len(c.Changes) > 0 {
-		b.WriteString("## 变更记录\n\n")
+		b.WriteString("## " + mtr("变更记录", "Changes") + "\n\n")
 		for _, ch := range c.Changes {
 			b.WriteString(fmt.Sprintf("- %s %s %s\n", ch.At.Format("01-02 15:04"), ch.Action, ch.ResourceName))
 		}
@@ -210,7 +220,7 @@ func (c *Content) RenderMarkdown(title string) string {
 	}
 
 	if len(c.Advice) > 0 {
-		b.WriteString("## 建议\n\n")
+		b.WriteString("## " + mtr("建议", "Recommendations") + "\n\n")
 		for _, a := range c.Advice {
 			b.WriteString("- " + flattenEntities(a.Text) + "\n")
 		}

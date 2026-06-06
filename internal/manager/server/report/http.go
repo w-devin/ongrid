@@ -13,6 +13,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -167,7 +168,7 @@ func (h *Handler) generateNow(w http.ResponseWriter, r *http.Request) {
 	if scope == "" {
 		scope = "{}"
 	}
-	rpt, err := h.uc.GenerateNow(r.Context(), t.UserID, req.Kind, req.Timezone, scope, period)
+	rpt, err := h.uc.GenerateNow(r.Context(), t.UserID, req.Kind, req.Timezone, scope, localeFromRequest(r), period)
 	if err != nil {
 		writeErr(w, err)
 		return
@@ -323,7 +324,7 @@ func (h *Handler) runNow(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, err)
 		return
 	}
-	rpt, err := h.uc.RunNow(r.Context(), id, h.now())
+	rpt, err := h.uc.RunNow(r.Context(), id, localeFromRequest(r), h.now())
 	if err != nil {
 		writeErr(w, err)
 		return
@@ -358,6 +359,29 @@ func atoiDefault(s string, def int) int {
 		return def
 	}
 	return n
+}
+
+// localeFromRequest picks the operator's UI language from Accept-Language
+// (sent by the SPA from web/src/i18n/locale.ts). Returns "en" / "zh" or
+// "" when unset/unknown — the generator's DefaultLocale catches "" for
+// scheduled fires. Mirrors alert/http.go's helper. See
+// feedback_ai_output_locale.
+func localeFromRequest(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	raw := strings.TrimSpace(r.Header.Get("Accept-Language"))
+	if raw == "" {
+		return ""
+	}
+	first := strings.SplitN(raw, ",", 2)[0]
+	primary := strings.ToLower(strings.SplitN(strings.TrimSpace(first), "-", 2)[0])
+	switch primary {
+	case "en", "zh":
+		return primary
+	default:
+		return ""
+	}
 }
 
 // compile-time guard keeps context import lint-clean across edits.

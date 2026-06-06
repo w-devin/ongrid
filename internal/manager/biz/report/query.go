@@ -131,7 +131,7 @@ func (u *Usecase) DeleteSchedule(ctx context.Context, id uint64) error {
 // without disturbing its next_fire_at. The report is created as a
 // manual (nil schedule_id) artifact so it never collides with the
 // scheduled window's dedup key.
-func (u *Usecase) RunNow(ctx context.Context, scheduleID uint64, now time.Time) (*model.Report, error) {
+func (u *Usecase) RunNow(ctx context.Context, scheduleID uint64, locale string, now time.Time) (*model.Report, error) {
 	s, err := u.repo.GetSchedule(ctx, scheduleID)
 	if err != nil {
 		return nil, err
@@ -148,7 +148,9 @@ func (u *Usecase) RunNow(ctx context.Context, scheduleID uint64, now time.Time) 
 	if err != nil {
 		return nil, err
 	}
-	return u.GenerateNow(ctx, s.CreatedBy, s.Kind, s.Timezone, s.ScopeJSON, period)
+	// run-now is an operator action → narrate in the operator's UI locale
+	// (Accept-Language), same as a manual generate.
+	return u.GenerateNow(ctx, s.CreatedBy, s.Kind, s.Timezone, s.ScopeJSON, locale, period)
 }
 
 // ShareReport mints (or refreshes) a 30-day share token on a report and

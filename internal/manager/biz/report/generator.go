@@ -171,7 +171,7 @@ func (g *workerGenerator) generate(ctx context.Context, rpt *model.Report) error
 	}
 
 	rpt.ContentJSON = content.MustJSON()
-	rpt.ContentMD = content.RenderMarkdown(rpt.Title)
+	rpt.ContentMD = content.RenderMarkdown(rpt.Title, g.localeFor(rpt))
 	rpt.SummaryText = truncate(content.Narrative.Headline, 510)
 	rpt.Status = model.StatusReady
 	rpt.ErrorMsg = ""
@@ -268,9 +268,13 @@ func (g *workerGenerator) scheduleOverride(rpt *model.Report) string {
 }
 
 func (g *workerGenerator) localeFor(rpt *model.Report) string {
-	// Scheduled reports run headless; there's no per-request locale.
-	// Future: store an owner-locale snapshot on the schedule. For now
-	// the configured default wins.
+	// Manual generate / run-now snapshot the requester's Accept-Language
+	// onto rpt.Locale → narrate in the operator's UI language. Scheduled
+	// fires run headless (Locale=""), so the configured default
+	// (ONGRID_DEFAULT_LOCALE) wins. See feedback_ai_output_locale.
+	if rpt != nil && rpt.Locale != "" {
+		return rpt.Locale
+	}
 	return g.cfg.DefaultLocale
 }
 

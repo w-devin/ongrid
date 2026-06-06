@@ -70,7 +70,7 @@ func TestValidate_AllowsCalmReport(t *testing.T) {
 }
 
 func TestRenderMarkdown_FlattensEntities(t *testing.T) {
-	md := sampleContent().RenderMarkdown("周报 · 2026 W23")
+	md := sampleContent().RenderMarkdown("周报 · 2026 W23", "zh")
 	if strings.Contains(md, "{{entity:") {
 		t.Errorf("entity tokens not flattened:\n%s", md)
 	}
@@ -80,8 +80,26 @@ func TestRenderMarkdown_FlattensEntities(t *testing.T) {
 	if !strings.Contains(md, "# 周报 · 2026 W23") {
 		t.Errorf("title missing:\n%s", md)
 	}
-	if !strings.Contains(md, "**Incidents**: 23 (-12%)") {
-		t.Errorf("hero delta not rendered:\n%s", md)
+	// zh locale → Chinese section titles.
+	if !strings.Contains(md, "## 监控覆盖") {
+		t.Errorf("zh section title missing:\n%s", md)
+	}
+}
+
+// TestRenderMarkdown_Locale verifies the markdown section titles follow
+// the report locale (feedback_ai_output_locale) — en yields English
+// headings, never the Chinese defaults.
+func TestRenderMarkdown_Locale(t *testing.T) {
+	en := sampleContent().RenderMarkdown("Weekly · 2026 W23", "en")
+	for _, want := range []string{"## Monitoring coverage", "## Usage", "## New assets"} {
+		if !strings.Contains(en, want) {
+			t.Errorf("en markdown missing %q:\n%s", want, en)
+		}
+	}
+	for _, banned := range []string{"## 监控覆盖", "## 使用情况", "## 资源使用"} {
+		if strings.Contains(en, banned) {
+			t.Errorf("en markdown leaked Chinese heading %q", banned)
+		}
 	}
 }
 
